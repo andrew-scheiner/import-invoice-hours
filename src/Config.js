@@ -25,13 +25,14 @@ const REPORT_MONTHLY_INVOICE_LIST_ID = '1KRhirjLfWGtBqG8dTE-wKZbTmFk4SdrRak-eGxc
 const { INVOICE_HOURS_ID } = GASConfigLibrary.getSpreadsheetIds();
 const { INVOICE_HOURS } = GASConfigLibrary.getSheetNames();
 
-
 const SORT_CONFIGS = {
   Cpi: {
     sortColumns: [
-      { column: 2, ascending: true },
       { column: 3, ascending: true },
+      { column: 4, ascending: true },
+      { column: 5, ascending: true },
+      { column: 2, ascending: true },
     ],
     headerRows: 1,
-  }
+  },
 };
