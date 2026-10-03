@@ -18,11 +18,11 @@ copyLearnerNamesWithEndDate
     Contract type 
 */
 
-
 function createMenu() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Custom')
     .addItem('Backup Spreadsheet', 'backupSpreadsheet')
+    .addItem('Sort Sheet', 'sortActiveSheet')
     .addItem('Update Data Source(s)', 'updateDataSources')
     .addItem('Update Invoicee List', 'copyLearnerNamesWithInvoiceDate')
     .addToUi();
@@ -46,19 +46,19 @@ function getGCalInvoiceEvents() {
   const events = cal.getEvents(reportFrom, reportTo, { search: invoiceTime });
 
   // Prepare data for batch insertion
-  const data = events.map(event => {
+  const data = events.map((event) => {
     const startTime = event.getStartTime();
     const endTime = event.getEndTime();
-    const duration = ((endTime - startTime) / 60000) / 60; // Duration in hours
+    const duration = (endTime - startTime) / 60000 / 60; // Duration in hours
 
     return [
-      startTime,                     // Column 1: Start date
-      calendarId,                    // Column 2: Calendar ID
-      event.getTitle(),              // Column 3: Event title
-      startTime,                     // Column 4: Start time
-      endTime,                       // Column 5: End time
-      duration,                      // Column 6: Duration
-      event.getDescription()         // Column 7: Description
+      startTime, // Column 1: Start date
+      calendarId, // Column 2: Calendar ID
+      event.getTitle(), // Column 3: Event title
+      startTime, // Column 4: Start time
+      endTime, // Column 5: End time
+      duration, // Column 6: Duration
+      event.getDescription(), // Column 7: Description
     ];
   });
 
@@ -81,22 +81,17 @@ function getGCalInvoiceEvents() {
     range.setValues(data);
 
     // Apply formatting
-    sheet.getRange(reportStartRow, reportStartColumn).setNumberFormat("dd/mm/yyyy"); // Start date
-    sheet.getRange(reportStartRow, reportStartColumn + 3, data.length, 1).setNumberFormat("hh:mm"); // Start time
-    sheet.getRange(reportStartRow, reportStartColumn + 4, data.length, 1).setNumberFormat("hh:mm"); // End time
-    sheet.getRange(reportStartRow, reportStartColumn + 5, data.length, 1).setNumberFormat("0.00"); // Duration
+    sheet.getRange(reportStartRow, reportStartColumn).setNumberFormat('dd/mm/yyyy'); // Start date
+    sheet.getRange(reportStartRow, reportStartColumn + 3, data.length, 1).setNumberFormat('hh:mm'); // Start time
+    sheet.getRange(reportStartRow, reportStartColumn + 4, data.length, 1).setNumberFormat('hh:mm'); // End time
+    sheet.getRange(reportStartRow, reportStartColumn + 5, data.length, 1).setNumberFormat('0.00'); // Duration
   }
 }
 
-
-function submitFormValues(){
+function submitFormValues() {
   copyFormInvoiceHoursToInvoicesHours();
   copyLearnerNamesWithInvoiceDate();
-} 
-
-
-
-
+}
 
 function copyFormInvoiceHoursToInvoicesHours() {
   const sourceSpreadsheetId = SS_ID;
@@ -112,33 +107,38 @@ function copyFormInvoiceHoursToInvoicesHours() {
     sourceRangeStartColumn,
     sourceRangeColumnWidth,
     INVOICE_HOURS_ID,
-    INVOICE_HOURS)
-
+    INVOICE_HOURS
+  );
 }
-
-
-
-
 
 function copyLearnerNamesWithInvoiceDate() {
   const sourceSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sourceRange = sourceSpreadsheet.getRangeByName('form__learnerNames');
-  const sourceValues = sourceRange.getValues().flat().filter(name => name); // Flatten & clean
+  const sourceValues = sourceRange
+    .getValues()
+    .flat()
+    .filter((name) => name); // Flatten & clean
   const targetSpreadsheetId = REPORT_MONTHLY_INVOICE_LIST_ID; // Report Monthly Invoice List
 
   let invoiceDate;
 
-  if (INVOICE_TIME === '*CPE') { invoiceDate = END_DATE; }
-  if (INVOICE_TIME === '*CPB') { invoiceDate = START_DATE; }
+  if (INVOICE_TIME === '*CPE') {
+    invoiceDate = END_DATE;
+  }
+  if (INVOICE_TIME === '*CPB') {
+    invoiceDate = START_DATE;
+  }
 
   let contractorInitials;
 
+  if (CALENDAR === 'andrew.scheiner@brightpath.services') {
+    contractorInitials = 'AAS';
+  }
+  if (CALENDAR === 'helen.sender@brightpath.services') {
+    contractorInitials = 'HRS';
+  }
 
-  if (CALENDAR === 'andrew.scheiner@brightpath.services') { contractorInitials = "AAS"; }
-  if (CALENDAR === 'helen.sender@brightpath.services') { contractorInitials = "HRS"; }
-
-  const outputArray = sourceValues.map(name => [invoiceDate, '', name, contractorInitials]);
-
+  const outputArray = sourceValues.map((name) => [invoiceDate, '', name, contractorInitials]);
 
   const targetSpreadsheet = SpreadsheetApp.openById(targetSpreadsheetId);
   const targetRange = targetSpreadsheet.getRangeByName('invoiceList__invoiceDate');
@@ -146,9 +146,13 @@ function copyLearnerNamesWithInvoiceDate() {
   const targetStartColumn = targetRange.getColumn();
 
   // Get the last non-empty row in the first column of the named range
-  const dataColumnRange = sheet.getRange(targetRange.getRow(), targetStartColumn, sheet.getLastRow() - targetRange.getRow() + 1);
+  const dataColumnRange = sheet.getRange(
+    targetRange.getRow(),
+    targetStartColumn,
+    sheet.getLastRow() - targetRange.getRow() + 1
+  );
   const values = dataColumnRange.getValues().flat();
-  let lastRowOffset = values.map(String).filter(v => v.trim()).length;
+  let lastRowOffset = values.map(String).filter((v) => v.trim()).length;
 
   const targetStartRow = targetRange.getRow() + lastRowOffset;
   sheet.getRange(targetStartRow, targetStartColumn, outputArray.length, 4).setValues(outputArray);
@@ -158,13 +162,21 @@ function copyLearnerNamesWithInvoiceDate() {
   statusCell.setFormula(`=HYPERLINK("${targetUrl}", "Updated")`);
 }
 
-
 function clearForm() {
   const formData = SS.getRangeByName('form__formInputData');
   formData.clearContent();
 
-  const invoiceHoursReportNumRows = GASLibrary.getNumberOfDataRowsInSingleColumnRange(FORM_SHEET, INVOICE_HOURS_START_ROW, INVOICE_HOURS_START_COL);
-  const invoiceHoursReport = FORM_SHEET.getRange(INVOICE_HOURS_START_ROW, INVOICE_HOURS_START_COL, invoiceHoursReportNumRows, INVOICE_HOURS_COL_WIDTH);
+  const invoiceHoursReportNumRows = GASLibrary.getNumberOfDataRowsInSingleColumnRange(
+    FORM_SHEET,
+    INVOICE_HOURS_START_ROW,
+    INVOICE_HOURS_START_COL
+  );
+  const invoiceHoursReport = FORM_SHEET.getRange(
+    INVOICE_HOURS_START_ROW,
+    INVOICE_HOURS_START_COL,
+    invoiceHoursReportNumRows,
+    INVOICE_HOURS_COL_WIDTH
+  );
   invoiceHoursReport.clearContent();
 
   const targetCell = SS.getRangeByName('form__calendar');
